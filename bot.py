@@ -99,6 +99,6 @@ def run_bot():
             await play_next(interaction)
 
 
-#12e1fevds
+
     #запускает бота
     client.run(token)
