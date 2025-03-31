@@ -1,7 +1,10 @@
 import os
+import asyncio
 import discord
+import yt_dlp
 from discord import app_commands
 from dotenv import load_dotenv
+#добавить импорт списка с спотика
 import get_name_song_spotify
 
 def run_bot():
@@ -16,11 +19,25 @@ def run_bot():
     client = discord.Client(intents=intents, test_guilds=[1355813064938749993])
     tree = app_commands.CommandTree(client)
 
-    # Очередь треков
-    queue = []
-    is_playing = False
+    # Очередь треков и состояние плеера
+    class PlayerState:
+        def __init__(self):
+            self.queue = []
+            self.is_playing = False
 
-    #выдает сообщение при успешном запуске
+    #задаем глобально переменные через класс
+    player = PlayerState()
+
+    # Настройки для yt-dlp
+    ydl_opts = {"format": "bestaudio/best"}
+    ytdl = yt_dlp.YoutubeDL(ydl_opts)
+
+    #Настройки для Ffmpeg
+    ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+
+
+
+    #выдает сообщение при успешном запуске бота
     @client.event
     async def on_ready():
         print(f'Бот {client.user} запущен!')
@@ -51,10 +68,36 @@ def run_bot():
             if len(members) == 0:
                 await voice_client.disconnect()
 
-
+    #запуск треков
     @client.event
-    async def play_next(interaction: discord.Interaction):
-        global is_playing
+    async def play_next(interaction):
+        #извлекает из списка ссылку/название
+        if len(player.queue) > 0:
+            player.is_playing = True
+            urls = player.queue.pop(0)
+
+            # Скачивание трека
+            request = "ytsearch1: " + urls
+            loop = asyncio.get_event_loop()
+            info = await loop.run_in_executor(None, lambda: ytdl.extract_info(request, download=False))
+            song_irl=info.get("entries", [])
+            song_irl_2=song_irl[0]["url"]
+
+
+
+            # Воспроизведение трека
+            voice_client = interaction.guild.voice_client
+            source = discord.FFmpegOpusAudio(executable="ffmpeg/ffmpeg.exe", **ffmpeg_options, source=song_irl_2)
+            voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(interaction), client.loop))
+
+            await interaction.followup.send("оке")
+        else:
+            player.is_playing = False
+
+
+
+
+
 
     #команда /hello
     @tree.command(name="hello", description="Привествует тебя")
@@ -87,15 +130,23 @@ def run_bot():
 
 
     @tree.command(name="play", description="Заставить хуесоса петь песню")
-    async def play(interaction: discord.Interaction, song_link: str):
-        global is_playing
-        if not interaction.voice_client:
-            await interaction.invoke(join)
+    async def play(interaction: discord.Interaction, song: str):
+        await interaction.response.defer()
 
-        queue.append(song_link)
-        await interaction.send(f"Добавлено в очередь: {song_link}")
+        if interaction.user.voice:
+            channel = interaction.user.voice.channel
+            if interaction.guild.voice_client:
+                await interaction.guild.voice_client.move_to(channel)
+            else:
+                await channel.connect()
+            await interaction.followup.send(f'Пидорас присоединился к {channel.name}')
+        else:
+            await interaction.followup.send("Зайди в канал даун")
 
-        if not is_playing:
+
+        player.queue.append(song)
+
+        if not player.is_playing:
             await play_next(interaction)
 
 
