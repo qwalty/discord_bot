@@ -66,6 +66,8 @@ def run_bot():
 
             # Если не осталось пользователей - отключаемся
             if len(members) == 0:
+                player.queue.clear()
+                player.is_playing = False
                 await voice_client.disconnect()
 
     #запуск треков
@@ -96,27 +98,40 @@ def run_bot():
 
 
 
-
-
-
-    #команда /hello
-    @tree.command(name="hello", description="Привествует тебя")
-    async def jello(interaction: discord.Interaction):
-        await interaction.response.send_message("Привет, хозяин")
-
-
-    #команда /join
-    @tree.command(name="join", description="Присоеденить хуесоса к каналу")
-    async def join(interaction: discord.Interaction):
+    #прост отдельная команда для присоединения бота
+    @client.event
+    async def join_for_play(interaction):
         if interaction.user.voice:
             channel = interaction.user.voice.channel
             if interaction.guild.voice_client:
                 await interaction.guild.voice_client.move_to(channel)
             else:
                 await channel.connect()
-            await interaction.response.send_message(f'Пидорас присоединился к {channel.name}')
         else:
-            await interaction.response.send_message("Зайди в канал даун")
+            await interaction.followup.send("Зайди в канал даун")
+
+
+
+
+    #команда /hello
+    @tree.command(name="hello", description="Привествует тебя")
+    async def hello(interaction: discord.Interaction):
+        await interaction.response.send_message("Привет, хозяин")
+
+
+    #команда /join
+    @tree.command(name="join", description="Присоеденить хуесоса к каналу")
+    async def join(interaction: discord.Interaction):
+        await interaction.response.defer()
+        if interaction.user.voice:
+            channel = interaction.user.voice.channel
+            if interaction.guild.voice_client:
+                await interaction.guild.voice_client.move_to(channel)
+            else:
+                await channel.connect()
+                await interaction.followup.send("я тут")
+        else:
+            await interaction.followup.send("Зайди в канал даун")
 
 
     #команда /leave
@@ -133,21 +148,46 @@ def run_bot():
     async def play(interaction: discord.Interaction, song: str):
         await interaction.response.defer()
 
-        if interaction.user.voice:
-            channel = interaction.user.voice.channel
-            if interaction.guild.voice_client:
-                await interaction.guild.voice_client.move_to(channel)
-            else:
-                await channel.connect()
-            await interaction.followup.send(f'Пидорас присоединился к {channel.name}')
-        else:
-            await interaction.followup.send("Зайди в канал даун")
-
-
-        player.queue.append(song)
-
+        #я кароч не хотел засорять тут, поэт вынес отдельно присоединение к каналу
         if not player.is_playing:
+            await join_for_play(interaction)
+            player.queue.append(song)
             await play_next(interaction)
+        else:
+            player.queue.append(song)
+            await interaction.followup.send("добавил трек в очередь")
+
+
+    #команда /skip
+    @tree.command(name="skip", description="Пропускает твой ебучий трек")
+    async def skip(interaction: discord.Interaction):
+        await interaction.response.defer()
+        if (len(player.queue) == 0):
+            await interaction.followup.send("очередь пуста гений")
+        else:
+            await interaction.guild.voice_client.stop()
+            await interaction.followup.send("оке, пропустил")
+            await play_next(interaction)
+
+
+    #камонда /pause
+    @tree.command(name="pause", description="Затыкает пидора пасть")
+    async def pause(interaction: discord.Interaction):
+        await interaction.response.defer()
+        await interaction.followup.send("*молчит...*")
+        interaction.guild.voice_client.pause()
+
+
+
+    #команда /resume
+    @tree.command(name="resume", description="Открывает пидору пасть")
+    async def resume(interaction: discord.Interaction):
+        voice=interaction.guild.voice_client
+        await interaction.response.defer()
+        await interaction.followup.send("*Чет говорит...*")
+        voice.resume()
+
+
 
 
 
