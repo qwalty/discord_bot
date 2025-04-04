@@ -12,6 +12,7 @@ def run_bot():
     load_dotenv()
     token = os.getenv("DISCORD_TOKEN")
 
+
     #выдает привилегии
     intents = discord.Intents.default()
     intents.voice_states = True
@@ -23,6 +24,7 @@ def run_bot():
     class PlayerState:
         def __init__(self):
             self.queue = []
+            self.urls = []
             self.is_playing = False
 
     #задаем глобально переменные через класс
@@ -58,44 +60,53 @@ def run_bot():
         voice_client = guild.voice_client
 
         if voice_client and voice_client.is_connected():
-            # Получаем текущий канал бота
             channel = voice_client.channel
 
-            # Проверяем количество участников (исключая бота)
+            # Проверка кол участников (исключая бота)
             members = [m for m in channel.members if not m.bot]
 
-            # Если не осталось пользователей - отключаемся
             if len(members) == 0:
-                player.queue.clear()
+                player.urls.clear()
                 player.is_playing = False
                 await voice_client.disconnect()
+
 
     #запуск треков
     @client.event
     async def play_next(interaction):
-        #извлекает из списка ссылку/название
-        if len(player.queue) > 0:
-            player.is_playing = True
-            urls = player.queue.pop(0)
+        player.is_playing = True
+        #извлекает из списка ссылку
+        if len(player.queue) > 0 or len(player.urls)>0:
+            song_irl=player.urls.pop(0)
 
-            # Скачивание трека
-            request = "ytsearch1: " + urls
-            loop = asyncio.get_event_loop()
-            info = await loop.run_in_executor(None, lambda: ytdl.extract_info(request, download=False))
-            song_irl=info.get("entries", [])
-            song_irl_2=song_irl[0]["url"]
-
-
-
-            # Воспроизведение трека
+            #Воспроизведение трека
             voice_client = interaction.guild.voice_client
-            source = discord.FFmpegOpusAudio(executable="ffmpeg/ffmpeg.exe", **ffmpeg_options, source=song_irl_2)
-            voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(interaction), client.loop))
-
+            source = discord.FFmpegOpusAudio(executable="ffmpeg/ffmpeg.exe", **ffmpeg_options, source=song_irl)
             await interaction.followup.send("оке")
+            voice_client.play(source,  after=lambda e: asyncio.run_coroutine_threadsafe(play_next(interaction), client.loop))
         else:
             player.is_playing = False
 
+
+    #получение ссылок на треки
+    @client.event
+    async def get_links():
+        if len(player.queue)>0:
+            url_in_queue = player.queue.pop(0)
+
+            #Скачивание трека
+            loop = asyncio.get_event_loop()
+            info = await loop.run_in_executor(None, lambda: ytdl.extract_info(url_in_queue, download=False))
+
+            #упаковка ссылок
+            if 'entries' in info:
+                for entry in info['entries']:
+                    if entry and entry.get('url'):
+                        player.urls.append(entry['url'])
+            #Если это прямая ссылка на одно видео
+            elif info.get('url'):
+                player.urls.append(info['url'])
+        else: return
 
 
     #прост отдельная команда для присоединения бота
@@ -144,6 +155,7 @@ def run_bot():
             await interaction.response.send_message("Ты ебнутый?")
 
 
+    # команда /play
     @tree.command(name="play", description="Заставить хуесоса петь песню")
     async def play(interaction: discord.Interaction, song: str):
         await interaction.response.defer()
@@ -152,25 +164,28 @@ def run_bot():
         if not player.is_playing:
             await join_for_play(interaction)
             player.queue.append(song)
+            await get_links()
             await play_next(interaction)
         else:
             player.queue.append(song)
             await interaction.followup.send("добавил трек в очередь")
+            await get_links()
 
 
     #команда /skip
     @tree.command(name="skip", description="Пропускает твой ебучий трек")
     async def skip(interaction: discord.Interaction):
         await interaction.response.defer()
-        if (len(player.queue) == 0):
+        if (len(player.urls)) == 0 != (len(player.queue) == 0):
             await interaction.followup.send("очередь пуста гений")
         else:
-            await interaction.guild.voice_client.stop()
+            interaction.guild.voice_client.stop()
             await interaction.followup.send("оке, пропустил")
+            player.is_playing = False
             await play_next(interaction)
 
 
-    #камонда /pause
+    #команда /pause
     @tree.command(name="pause", description="Затыкает пидора пасть")
     async def pause(interaction: discord.Interaction):
         await interaction.response.defer()
@@ -188,6 +203,14 @@ def run_bot():
         voice.resume()
 
 
+    #команда /clear
+    @tree.command(name="clear", description="очищает очередь")
+    async def clear(interaction: discord.Interaction):
+        await interaction.response.defer()
+        player.queue.clear()
+        player.urls.clear()
+        player.is_playing = False
+        await interaction.followup.send("очистил очередь")
 
 
 
