@@ -127,7 +127,7 @@ def run_bot():
     #команда /hello
     @tree.command(name="hello", description="Привествует тебя njdfhbo")
     async def jello(interaction: discord.Interaction):
-        await interaction.response.send_message("Привет, хозяин")
+        await interaction.response.send_message("ЗДРАВИЯ ЖЕЛАЮ!")
 
 
     #команда /join
