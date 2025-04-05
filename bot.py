@@ -156,7 +156,7 @@ def run_bot():
 
 
     # команда /play
-    @tree.command(name="play", description="Заставить хуесоса петь песню")
+    @tree.command(name="play", description="Песню ЗА-ПЕ-ВАЙ!")
     async def play(interaction: discord.Interaction, song: str):
         await interaction.response.defer()
 
@@ -168,38 +168,38 @@ def run_bot():
             await play_next(interaction)
         else:
             player.queue.append(song)
-            await interaction.followup.send("добавил трек в очередь")
+            await interaction.followup.send("Внёс пластинку в очередь")
             await get_links()
 
 
     #команда /skip
-    @tree.command(name="skip", description="Пропускает твой ебучий трек")
+    @tree.command(name="skip", description="Перехожу к следующей!")
     async def skip(interaction: discord.Interaction):
         await interaction.response.defer()
         if (len(player.urls)) == 0 != (len(player.queue) == 0):
-            await interaction.followup.send("очередь пуста гений")
+            await interaction.followup.send("Нет музыки, товарищ!")
         else:
             interaction.guild.voice_client.stop()
-            await interaction.followup.send("оке, пропустил")
+            await interaction.followup.send("Следующее, так следующее...")
             player.is_playing = False
             await play_next(interaction)
 
 
     #команда /pause
-    @tree.command(name="pause", description="Затыкает пидора пасть")
+    @tree.command(name="pause", description="ОТСТАВИТЬ музыку!")
     async def pause(interaction: discord.Interaction):
         await interaction.response.defer()
-        await interaction.followup.send("*молчит...*")
+        await interaction.followup.send("ЕСТЬ ОТСТАВИТЬ музыку!")
         interaction.guild.voice_client.pause()
 
 
 
     #команда /resume
-    @tree.command(name="resume", description="Открывает пидору гав")
+    @tree.command(name="resume", description="Музыку!")
     async def resume(interaction: discord.Interaction):
         voice=interaction.guild.voice_client
         await interaction.response.defer()
-        await interaction.followup.send("*Чет говорит...*")
+        await interaction.followup.send("ЕСТЬ продолжить музыку!")
         voice.resume()
 
 
