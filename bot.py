@@ -59,11 +59,11 @@ def run_bot():
     #команда /hello
     @tree.command(name="hello", description="Привествует тебя")
     async def jello(interaction: discord.Interaction):
-        await interaction.response.send_message("Привет, хозяин")
+        await interaction.response.send_message("ЗДРАВИЯ ЖЕЛАЮ!")
 
 
     #команда /join
-    @tree.command(name="join", description="Присоеденить хуесоса к каналу")
+    @tree.command(name="join", description="Присоеденить ГРОМОФОН к каналу")
     async def join(interaction: discord.Interaction):
         if interaction.user.voice:
             channel = interaction.user.voice.channel
