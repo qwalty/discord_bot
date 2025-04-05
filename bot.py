@@ -119,7 +119,7 @@ def run_bot():
             else:
                 await channel.connect()
         else:
-            await interaction.followup.send("Подключись к каналу!")
+            await interaction.followup.send("Заходи, дорогой!")
 
 
 
@@ -142,7 +142,7 @@ def run_bot():
                 await channel.connect()
                 await interaction.followup.send("ГОТОВ И ЖДУ ПРИКАЗА!")
         else:
-            await interaction.followup.send("Подключись к каналу!")
+            await interaction.followup.send("ГОТОВ И ЖДУ ПРИКАЗА!")
 
 
     #команда /leave
