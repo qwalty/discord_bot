@@ -156,7 +156,7 @@ def run_bot():
 
 
     # команда /play
-    @tree.command(name="play", description="Заставить хуесоса петь песню")
+    @tree.command(name="play", description="Заставить lololoshka петь песню")
     async def play(interaction: discord.Interaction, song: str):
         await interaction.response.defer()
 
