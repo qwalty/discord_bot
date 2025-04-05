@@ -67,6 +67,7 @@ def run_bot():
 
             if len(members) == 0:
                 player.urls.clear()
+                player.queue.clear()
                 player.is_playing = False
                 await voice_client.disconnect()
 
@@ -82,7 +83,6 @@ def run_bot():
             #Воспроизведение трека
             voice_client = interaction.guild.voice_client
             source = discord.FFmpegOpusAudio(executable="ffmpeg/ffmpeg.exe", **ffmpeg_options, source=song_irl)
-            await interaction.followup.send("оке")
             voice_client.play(source,  after=lambda e: asyncio.run_coroutine_threadsafe(play_next(interaction), client.loop))
         else:
             player.is_playing = False
@@ -118,6 +118,7 @@ def run_bot():
                 await interaction.guild.voice_client.move_to(channel)
             else:
                 await channel.connect()
+                await interaction.followup.send("Присоеденился")
         else:
             await interaction.followup.send("Заходи, дорогой!")
 
@@ -126,7 +127,7 @@ def run_bot():
 
     #команда /hello
     @tree.command(name="hello", description="Приветствие")
-    async def jello(interaction: discord.Interaction):
+    async def hello(interaction: discord.Interaction):
         await interaction.response.send_message("ЗДРАВИЯ ЖЕЛАЮ!")
 
 
