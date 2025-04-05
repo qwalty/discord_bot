@@ -125,7 +125,7 @@ def run_bot():
 
 
     #команда /hello
-    @tree.command(name="hello", description="Привествует тебя")
+    @tree.command(name="hello", description="Привествует тебя, уебок")
     async def hello(interaction: discord.Interaction):
         await interaction.response.send_message("Привет, хозяин")
 
