@@ -210,7 +210,7 @@ def run_bot():
         player.queue.clear()
         player.urls.clear()
         player.is_playing = False
-        await interaction.followup.send("очистил очередь")
+        await interaction.followup.send("Пласинки убраны, товарищ!")
 
 
 
