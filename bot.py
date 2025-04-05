@@ -207,6 +207,7 @@ def run_bot():
     @tree.command(name="clear", description="очищает очередь")
     async def clear(interaction: discord.Interaction):
         await interaction.response.defer()
+        interaction.guild.voice_client.stop()
         player.queue.clear()
         player.urls.clear()
         player.is_playing = False
