@@ -119,13 +119,13 @@ def run_bot():
             else:
                 await channel.connect()
         else:
-            await interaction.followup.send("Зайди в канал даун")
+            await interaction.followup.send("Подключись к каналу!")
 
 
 
 
     #команда /hello
-    @tree.command(name="hello", description="Привествует тебя njdfhbo")
+    @tree.command(name="hello", description="Приветствие")
     async def jello(interaction: discord.Interaction):
         await interaction.response.send_message("ЗДРАВИЯ ЖЕЛАЮ!")
 
@@ -140,23 +140,23 @@ def run_bot():
                 await interaction.guild.voice_client.move_to(channel)
             else:
                 await channel.connect()
-                await interaction.followup.send("я тут")
+                await interaction.followup.send("ГОТОВ И ЖДУ ПРИКАЗА!")
         else:
-            await interaction.followup.send("Зайди в канал даун")
+            await interaction.followup.send("Подключись к каналу!")
 
 
     #команда /leave
-    @tree.command(name="leave", description="Послать пидораса нахер из канала")
+    @tree.command(name="leave", description="Разорвать соединение")
     async def leave(interaction: discord.Interaction):
         if interaction.guild.voice_client:
             await interaction.guild.voice_client.disconnect()
-            await interaction.response.send_message("Пидорас отключился")
+            await interaction.response.send_message("Соединение разорвано!")
         else:
-            await interaction.response.send_message("Ты ебнутый?")
+            await interaction.response.send_message("Товарищ, это невозможно!")
 
 
     # команда /play
-    @tree.command(name="play", description="Заставить хуесоса петь песню")
+    @tree.command(name="play", description="Песню ЗА-ПЕ-ВАЙ!")
     async def play(interaction: discord.Interaction, song: str):
         await interaction.response.defer()
 
