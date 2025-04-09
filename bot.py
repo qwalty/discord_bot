@@ -79,7 +79,6 @@ def run_bot():
         #извлекает из списка ссылку
         if len(player.queue) > 0 or len(player.urls)>0:
             song_irl=player.urls.pop(0)
-
             #Воспроизведение трека
             voice_client = interaction.guild.voice_client
             source = discord.FFmpegOpusAudio(executable="ffmpeg/ffmpeg.exe", **ffmpeg_options, source=song_irl)
@@ -94,18 +93,35 @@ def run_bot():
         if len(player.queue)>0:
             url_in_queue = player.queue.pop(0)
 
-            #Скачивание трека
-            loop = asyncio.get_event_loop()
-            info = await loop.run_in_executor(None, lambda: ytdl.extract_info(url_in_queue, download=False))
+            #Извлекает ссылки из спотика
+            if "spotify.com" in url_in_queue:
+                songs_names= get_name_song_spotify.extract_info(url_in_queue)
+                for song in songs_names:
+                    request_sp = "ytsearch: " + song
+                    loop = asyncio.get_event_loop()
+                    sp_info= await loop.run_in_executor(None, lambda: ytdl.extract_info(request_sp, download=False))
+                    # упаковка ссылок
+                    if 'entries' in sp_info:
+                        for entry in sp_info['entries']:
+                            if entry and entry.get('url'):
+                                player.urls.append(entry['url'])
+                    # Если это прямая ссылка на одно видео
+                    elif sp_info.get('url'):
+                        player.urls.append(sp_info['url'])
 
-            #упаковка ссылок
-            if 'entries' in info:
-                for entry in info['entries']:
-                    if entry and entry.get('url'):
-                        player.urls.append(entry['url'])
-            #Если это прямая ссылка на одно видео
-            elif info.get('url'):
-                player.urls.append(info['url'])
+            #извлекает ссылки из ютуба
+            elif "youtube.com" in url_in_queue:
+                loop = asyncio.get_event_loop()
+                yt_info = await loop.run_in_executor(None, lambda: ytdl.extract_info(url_in_queue, download=False))
+                if 'entries' in yt_info:
+                    for entry in yt_info['entries']:
+                        if entry and entry.get('url'):
+                            player.urls.append(entry['url'])
+                # Если это прямая ссылка на одно видео
+                elif yt_info.get('url'):
+                    player.urls.append(yt_info['url'])
+            #print(len(player.urls))
+
         else: return
 
 
@@ -180,7 +196,7 @@ def run_bot():
         if (len(player.urls)) == 0 != (len(player.queue) == 0):
             await interaction.followup.send("Нет музыки, товарищ!")
         else:
-            interaction.guild.voice_client.stop()
+            interaction.guild.voice_client.pause()
             await interaction.followup.send("Следующее, так следующее...")
             player.is_playing = False
             await play_next(interaction)
