@@ -7,106 +7,96 @@ import re
 load_dotenv()
 yandex_token = os.getenv("YANDEX_MUSIC_TOKEN")
 
-# Инициализация клиента Яндекс.Музыки
+# Инициализация клиента
 client = Client(yandex_token).init()
 
+def is_yandex_music_url(url):
+    """Проверяем, что это ссылка Яндекс.Музыки"""
+    patterns = [
+        r'https?://music\.yandex\..+',
+        r'https?://yandex\..+/music/.+'
+    ]
+    return any(re.match(p, url) for p in patterns)
+
 def extract_info(url):
-    """Определяем тип контента и получаем информацию"""
-    if "track/" in url:
-        return get_track_info(url)
-    elif "album/" in url:
-        return get_album_tracks_info(url)
-    elif "playlist/" in url:
-        return get_playlist_tracks_info(url)
-    else:
-        raise ValueError("Неподдерживаемый URL Яндекс Музыки")
+    """Основная функция для извлечения треков"""
+    try:
+        if "track" in url:
+            return get_track_info(url)
+        elif "album" in url:
+            return get_album_tracks(url)
+        elif "playlist" in url:
+            return get_playlist_tracks(url)
+        else:
+            raise ValueError("Неподдерживаемый URL Яндекс.Музыки")
+    except Exception as e:
+        print(f"Ошибка в extract_info: {e}")
+        return []
 
 def get_track_info(track_url):
-    """Получаем информацию о треке"""
+    """Получаем информацию об одном треке"""
     try:
         # Извлекаем ID трека из URL
         track_id = track_url.split('track/')[-1].split('/')[0]
         
-        # Получаем данные трека
+        # Получаем объект трека
         track = client.tracks([track_id])[0]
         
-        # Форматируем исполнителей
-        artists = ", ".join([artist.name for artist in track.artists])
-        
-        # Возвращаем список с одним элементом, как в Spotify-версии
+        # Формируем строку с названием и исполнителями
+        artists = ", ".join(artist.name for artist in track.artists)
         return [f"{track.title} - {artists}"]
     except Exception as e:
         print(f"Ошибка получения трека: {e}")
         return []
 
-def get_album_tracks_info(album_url):
-    """Получаем треки из альбома"""
+def get_album_tracks(album_url):
+    """Получаем все треки из альбома"""
     try:
-        # Извлекаем ID альбома
         album_id = album_url.split('album/')[-1].split('/')[0]
-        
-        # Получаем данные альбома
         album = client.albums_with_tracks(album_id)
         
         tracks = []
+        # Альбом может содержать несколько томов (volumes)
         for volume in album.volumes:
             for track in volume:
-                # Форматируем данные аналогично Spotify-версии
-                track_data = {
-                    'track_name': track.title,
-                    'artists': [artist.name for artist in track.artists]
-                }
-                
-                # Очищаем и форматируем строку
-                artists = ", ".join(track_data['artists'])
-                clean_artists = artists.replace("'", "").replace("[", "").replace("]", "")
-                
-                tracks.append(f"{track_data['track_name']} - {clean_artists}")
+                artists = ", ".join(artist.name for artist in track.artists)
+                tracks.append(f"{track.title} - {artists}")
         
         return tracks
     except Exception as e:
         print(f"Ошибка получения альбома: {e}")
         return []
 
-def get_playlist_tracks_info(playlist_url):
+def get_playlist_tracks(playlist_url):
     """Получаем треки из плейлиста"""
     try:
-        # Извлекаем данные из URL
+        # Разбираем URL плейлиста
         parts = playlist_url.split('/')
-        user_login = parts[-3]
-        playlist_id = parts[-1]
+        user_login = parts[-3]  # Логин владельца
+        playlist_id = parts[-1]  # ID плейлиста
         
-        # Получаем данные плейлиста
+        # Получаем плейлист
         playlist = client.users_playlists(playlist_id, user_login)
         
         tracks = []
         for track_short in playlist.tracks:
+            # Получаем полную информацию о треке
             track = track_short.fetch_track()
-            
-            # Форматируем аналогично Spotify-версии
-            track_data = {
-                'track_name': track.title,
-                'artists': [artist.name for artist in track.artists]
-            }
-            
-            # Очищаем и форматируем строку
-            artists = ", ".join(track_data['artists'])
-            clean_artists = artists.replace("'", "").replace("[", "").replace("]", "")
-            
-            tracks.append(f"{track_data['track_name']} - {clean_artists}")
+            artists = ", ".join(artist.name for artist in track.artists)
+            tracks.append(f"{track.title} - {artists}")
         
         return tracks
     except Exception as e:
         print(f"Ошибка получения плейлиста: {e}")
         return []
 
-# Тестовый блок (аналогичный Spotify-версии)
+# Тестирование
 if __name__ == "__main__":
-    # Примеры ссылок
+    # Примеры ссылок (замените на реальные)
     test_track = "https://music.yandex.ru/album/1234567/track/7654321"
     test_album = "https://music.yandex.ru/album/1234567"
     test_playlist = "https://music.yandex.ru/users/yamusic-daily/playlists/1234"
     
     print("Трек:", get_track_info(test_track))
-    print("Альбом:", get_album_tracks_info(test_album))
-    print("Плейлист:", get_playlist_tracks_info(test_playlist))
+    print("Альбом:", get_album_tracks(test_album))
+    print("Плейлист:", get_playlist_tracks(test_playlist))
