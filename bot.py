@@ -134,7 +134,7 @@ def run_bot():
                 await interaction.guild.voice_client.move_to(channel)
             else:
                 await channel.connect()
-                await interaction.followup.send("Присоеденился")
+                await interaction.followup.send("Песню ЗА-ПЕ-ВАЙ!")
         else:
             await interaction.followup.send("Заходи, дорогой!")
 
@@ -159,7 +159,7 @@ def run_bot():
                 await channel.connect()
                 await interaction.followup.send("ГОТОВ И ЖДУ ПРИКАЗА!")
         else:
-            await interaction.followup.send("ГОТОВ И ЖДУ ПРИКАЗА!")
+            await interaction.followup.send("ЭТО НЕВОЗМОЖНО!")
 
 
     #команда /leave
