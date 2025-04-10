@@ -6,6 +6,7 @@ from discord import app_commands
 from dotenv import load_dotenv
 #добавить импорт списка с спотика
 import get_name_song_spotify
+import get_name_song_yandex
 
 def run_bot():
     #загружает ключ
@@ -17,7 +18,7 @@ def run_bot():
     intents = discord.Intents.default()
     intents.voice_states = True
     intents.members = True
-    client = discord.Client(intents=intents, test_guilds=[1355813064938749993])
+    client = discord.Client(intents=intents)
     tree = app_commands.CommandTree(client)
 
     # Очередь треков и состояние плеера
@@ -121,6 +122,38 @@ def run_bot():
                 elif yt_info.get('url'):
                     player.urls.append(yt_info['url'])
             #print(len(player.urls))
+
+
+            elif "yandex.ru" in url_in_queue:
+                songs_names= get_name_song_yandex.get_track_info(url_in_queue)
+                for song in songs_names:
+                    request_yd = "ytsearch: " + song
+                    loop = asyncio.get_event_loop()
+                    yd_info= await loop.run_in_executor(None, lambda: ytdl.extract_info(request_yd, download=False))
+                    # упаковка ссылок
+                    if 'entries' in yd_info:
+                        for entry in yd_info['entries']:
+                            if entry and entry.get('url'):
+                                player.urls.append(entry['url'])
+                    # Если это прямая ссылка на одно видео
+                    elif yd_info.get('url'):
+                        player.urls.append(yd_info['url'])
+
+            else:
+                song= url_in_queue
+                request_yd = "ytsearch: " + song
+                loop = asyncio.get_event_loop()
+                yt_info = await loop.run_in_executor(None, lambda: ytdl.extract_info(request_yd, download=False))
+                if 'entries' in yt_info:
+                    for entry in yt_info['entries']:
+                        if entry and entry.get('url'):
+                            player.urls.append(entry['url'])
+                # Если это прямая ссылка на одно видео
+                elif yt_info.get('url'):
+                    player.urls.append(yt_info['url'])
+
+
+
 
         else: return
 

@@ -1,148 +1,93 @@
 from yandex_music import Client
-from yandex_music.exceptions import NotFoundError, UnauthorizedError
 import os
 from dotenv import load_dotenv
 import re
-from urllib.parse import urlparse, parse_qs
 
-# Загрузка переменных окружения
+# Загрузка ключей
 load_dotenv()
+yandex_token = os.getenv("YANDEX_MUSIC_TOKEN")
 
-class YandexMusicParser:
-    def __init__(self):
-        token = os.getenv("YANDEX_MUSIC_TOKEN")
-        if not token:
-            raise ValueError("YANDEX_MUSIC_TOKEN не найден в .env файле")
-        
-        try:
-            self.client = Client(token).init()
-        except UnauthorizedError:
-            raise ValueError("Неверный токен Яндекс.Музыки")
+# Инициализация клиента
+client = Client(yandex_token).init()
 
-    @staticmethod
-    def _clean_url(url):
-        """Очистка URL от параметров и якорей"""
-        return url.split('?')[0].split('#')[0]
+def clean_url(url):
+    """Очищаем URL от параметров (обрезаем до ?)"""
+    return url.split('?')[0]
 
-    @staticmethod
-    def _extract_id(url, pattern):
-        """Извлечение ID из URL"""
-        match = re.search(pattern, url)
-        return match.group(1) if match else None
+def is_yandex_music_url(url):
+    """Проверяем, что это ссылка Яндекс.Музыки"""
+    clean_url = url.split('?')[0]
+    patterns = [
+        r'https?://music\.yandex\..+',
+        r'https?://yandex\..+/music/.+'
+    ]
+    return any(re.match(p, clean_url) for p in patterns)
 
-    def get_track_info(self, url):
-        """Получение информации о треке"""
-        clean_url = self._clean_url(url)
-        track_id = self._extract_id(clean_url, r'track/(\d+)')
-        
-        if not track_id:
-            return []
-        
-        try:
-            tracks = self.client.tracks([track_id])
-            if not tracks:
-                return []
-            
-            track = tracks[0]
-            artists = ", ".join(artist.name for artist in track.artists)
-            return [f"{track.title} - {artists}"]
-        except NotFoundError:
-            return []
-        except Exception as e:
-            print(f"Ошибка при получении трека: {e}")
-            return []
-
-    def get_album_tracks(self, url):
-        """Получение треков из альбома"""
-        clean_url = self._clean_url(url)
-        album_id = self._extract_id(clean_url, r'album/(\d+)')
-        
-        if not album_id:
-            return []
-        
-        try:
-            album = self.client.albums_with_tracks(album_id)
-            if not album:
-                return []
-            
-            tracks = []
-            for volume in album.volumes or []:
-                for track in volume:
-                    artists = ", ".join(artist.name for artist in track.artists)
-                    tracks.append(f"{track.title} - {artists}")
-            
-            return tracks
-        except NotFoundError:
-            return []
-        except Exception as e:
-            print(f"Ошибка при получении альбома: {e}")
-            return []
-
-    def get_playlist_tracks(self, url):
-        """Получение треков из плейлиста"""
-        clean_url = self._clean_url(url)
-        parts = clean_url.split('/')
-        
-        if len(parts) < 5 or 'playlist' not in parts:
-            return []
-        
-        playlist_id = parts[-1]
-        user_login = parts[-3]
-        
-        try:
-            playlist = self.client.users_playlists(playlist_id, user_login)
-            if not playlist:
-                return []
-            
-            tracks = []
-            for track_short in playlist.tracks:
-                try:
-                    track = track_short.fetch_track()
-                    artists = ", ".join(artist.name for artist in track.artists)
-                    tracks.append(f"{track.title} - {artists}")
-                except Exception as e:
-                    print(f"Ошибка при обработке трека: {e}")
-                    continue
-            
-            return tracks
-        except NotFoundError:
-            return []
-        except Exception as e:
-            print(f"Ошибка при получении плейлиста: {e}")
-            return []
-
-    def extract_info(self, url):
-        """Основной метод для извлечения информации"""
-        clean_url = self._clean_url(url)
-        
-        if 'track' in clean_url:
-            return self.get_track_info(clean_url)
-        elif 'album' in clean_url:
-            return self.get_album_tracks(clean_url)
-        elif 'playlist' in clean_url:
-            return self.get_playlist_tracks(clean_url)
-        else:
-            return []
-
-# Пример использования
-if __name__ == "__main__":
+def extract_info(url):
+    """Основная функция для извлечения треков"""
     try:
-        parser = YandexMusicParser()
+        clean_url = url.split('?')[0]  # Очищаем URL
         
-        # Тестовые URL (замените на реальные)
-        test_urls = [
-            "https://music.yandex.ru/album/1234567/track/7654321",
-            "https://music.yandex.ru/album/1234567",
-            "https://music.yandex.ru/users/yamusic/playlists/1234",
-            "https://music.yandex.ru/artist/12345"  # Неподдерживаемый тип
-        ]
-        
-        for url in test_urls:
-            print(f"\nОбработка URL: {url}")
-            result = parser.extract_info(url)
-            print(f"Найдено треков: {len(result)}")
-            for i, track in enumerate(result[:3], 1):  # Выводим первые 3 трека
-                print(f"{i}. {track}")
-                
+        if "track" in clean_url:
+            return get_track_info(clean_url)
+        elif "album" in clean_url:
+            return get_album_tracks(clean_url)
+        elif "playlist" in clean_url:
+            return get_playlist_tracks(clean_url)
+        else:
+            raise ValueError("Неподдерживаемый URL Яндекс.Музыки")
     except Exception as e:
-        print(f"Ошибка инициализации: {e}")
+        print(f"Ошибка в extract_info: {e}")
+        return []
+
+def get_track_info(track_url):
+    """Получаем информацию об одном треке"""
+    try:
+        clean_url = track_url.split('?')[0]
+        track_id = clean_url.split('track/')[-1].split('/')[0]
+        track = client.tracks([track_id])[0]
+        artists = ", ".join(artist.name for artist in track.artists)
+        return [f"{track.title} - {artists}"]
+    except Exception as e:
+        print(f"Ошибка получения трека: {e}")
+        return []
+
+def get_album_tracks(album_url):
+    """Получаем все треки из альбома"""
+    try:
+        clean_url = album_url.split('?')[0]
+        album_id = clean_url.split('album/')[-1].split('/')[0]
+        album = client.albums_with_tracks(album_id)
+        
+        tracks = []
+        for volume in album.volumes:
+            for track in volume:
+                artists = ", ".join(artist.name for artist in track.artists)
+                tracks.append(f"{track.title} - {artists}")
+        
+        return tracks
+    except Exception as e:
+        print(f"Ошибка получения альбома: {e}")
+        return []
+
+def get_playlist_tracks(playlist_url):
+    """Получаем треки из плейлиста"""
+    try:
+        clean_url = playlist_url.split('?')[0]
+        parts = clean_url.split('/')
+        user_login = parts[-3]
+        playlist_id = parts[-1]
+        
+        playlist = client.users_playlists(playlist_id, user_login)
+        
+        tracks = []
+        for track_short in playlist.tracks:
+            track = track_short.fetch_track()
+            artists = ", ".join(artist.name for artist in track.artists)
+            tracks.append(f"{track.title} - {artists}")
+        
+        return tracks
+    except Exception as e:
+        print(f"Ошибка получения плейлиста: {e}")
+        return []
+
