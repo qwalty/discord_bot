@@ -167,7 +167,6 @@ def run_bot():
                 await interaction.guild.voice_client.move_to(channel)
             else:
                 await channel.connect()
-                await interaction.followup.send("Песню ЗА-ПЕ-ВАЙ!")
         else:
             await interaction.followup.send("Заходи, дорогой!")
 
@@ -177,91 +176,125 @@ def run_bot():
     #команда /hello
     @tree.command(name="hello", description="Приветствие")
     async def hello(interaction: discord.Interaction):
-        await interaction.response.send_message("ЗДРАВИЯ ЖЕЛАЮ!")
+        try:
+            await interaction.response.send_message("ЗДРАВИЯ ЖЕЛАЮ!")
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
     #команда /join
     @tree.command(name="join", description="Присоеденить ГРОМОФОН к каналу")
     async def join(interaction: discord.Interaction):
-        await interaction.response.defer()
-        if interaction.user.voice:
-            channel = interaction.user.voice.channel
-            if interaction.guild.voice_client:
-                await interaction.guild.voice_client.move_to(channel)
+        try:
+            await interaction.response.defer()
+            if interaction.user.voice:
+                channel = interaction.user.voice.channel
+                if interaction.guild.voice_client:
+                    await interaction.guild.voice_client.move_to(channel)
+                else:
+                    await channel.connect()
+                    await interaction.followup.send("ГОТОВ И ЖДУ ПРИКАЗА!")
             else:
-                await channel.connect()
-                await interaction.followup.send("ГОТОВ И ЖДУ ПРИКАЗА!")
-        else:
-            await interaction.followup.send("ЭТО НЕВОЗМОЖНО!")
+                await interaction.followup.send("ЭТО НЕВОЗМОЖНО!")
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
     #команда /leave
     @tree.command(name="leave", description="Разорвать соединение")
     async def leave(interaction: discord.Interaction):
-        if interaction.guild.voice_client:
-            await interaction.guild.voice_client.disconnect()
-            await interaction.response.send_message("Соединение разорвано!")
-        else:
-            await interaction.response.send_message("Товарищ, это невозможно!")
+        try:
+            if interaction.guild.voice_client:
+                await interaction.guild.voice_client.disconnect()
+                await interaction.response.send_message("Соединение разорвано!")
+            else:
+                await interaction.response.send_message("Товарищ, это невозможно!")
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
     # команда /play
     @tree.command(name="play", description="Песню ЗА-ПЕ-ВАЙ!")
     async def play(interaction: discord.Interaction, song: str):
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
 
-        #я кароч не хотел засорять тут, поэт вынес отдельно присоединение к каналу
-        if not player.is_playing:
-            await join_for_play(interaction)
-            player.queue.append(song)
-            await get_links()
-            await play_next(interaction)
-        else:
-            player.queue.append(song)
-            await interaction.followup.send("Внёс пластинку в очередь")
-            await get_links()
+            # я кароч не хотел засорять тут, поэт вынес отдельно присоединение к каналу
+            if not player.is_playing:
+                await join_for_play(interaction)
+                player.queue.append(song)
+                await get_links()
+                await interaction.followup.send("Песню ЗА-ПЕ-ВАЙ!")
+                await play_next(interaction)
+            else:
+                player.queue.append(song)
+                await interaction.followup.send("Внёс пластинку в очередь")
+                await get_links()
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
+
 
 
     #команда /skip
     @tree.command(name="skip", description="Перехожу к следующей!")
     async def skip(interaction: discord.Interaction):
-        await interaction.response.defer()
-        if (len(player.urls)) == 0 != (len(player.queue) == 0):
-            await interaction.followup.send("Нет музыки, товарищ!")
-        else:
-            interaction.guild.voice_client.pause()
-            await interaction.followup.send("Следующее, так следующее...")
-            player.is_playing = False
-            await play_next(interaction)
+        try:
+            await interaction.response.defer()
+            if (len(player.urls)) == 0 != (len(player.queue) == 0):
+                await interaction.followup.send("Нет музыки, товарищ!")
+            else:
+                interaction.guild.voice_client.pause()
+                await interaction.followup.send("Следующее, так следующее...")
+                player.is_playing = False
+                await play_next(interaction)
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
     #команда /pause
     @tree.command(name="pause", description="ОТСТАВИТЬ музыку!")
     async def pause(interaction: discord.Interaction):
-        await interaction.response.defer()
-        await interaction.followup.send("ЕСТЬ ОТСТАВИТЬ музыку!")
-        interaction.guild.voice_client.pause()
+        try:
+            await interaction.response.defer()
+            await interaction.followup.send("ЕСТЬ ОТСТАВИТЬ музыку!")
+            interaction.guild.voice_client.pause()
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
 
     #команда /resume
     @tree.command(name="resume", description="Музыку!")
     async def resume(interaction: discord.Interaction):
-        voice=interaction.guild.voice_client
-        await interaction.response.defer()
-        await interaction.followup.send("ЕСТЬ продолжить музыку!")
-        voice.resume()
+        try:
+            voice = interaction.guild.voice_client
+            await interaction.response.defer()
+            await interaction.followup.send("ЕСТЬ продолжить музыку!")
+            voice.resume()
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
     #команда /clear
     @tree.command(name="clear", description="очищает очередь")
     async def clear(interaction: discord.Interaction):
-        await interaction.response.defer()
-        interaction.guild.voice_client.stop()
-        player.queue.clear()
-        player.urls.clear()
-        player.is_playing = False
-        await interaction.followup.send("Пласинки убраны, товарищ!")
+        try:
+            await interaction.response.defer()
+            interaction.guild.voice_client.stop()
+            player.queue.clear()
+            player.urls.clear()
+            player.is_playing = False
+            await interaction.followup.send("Пласинки убраны, товарищ!")
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
 
