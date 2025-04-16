@@ -4,7 +4,6 @@ import discord
 import yt_dlp
 from discord import app_commands
 from dotenv import load_dotenv
-#добавить импорт списка с спотика
 import get_name_song_spotify
 import get_name_song_yandex
 
@@ -94,6 +93,11 @@ def run_bot():
         if len(player.queue)>0:
             url_in_queue = player.queue.pop(0)
 
+            #логирование запросов
+            with open("logs.txt", "a") as file:
+                file.write(f"{url_in_queue}\n")
+
+
             #Извлекает ссылки из спотика
             if "spotify.com" in url_in_queue:
                 songs_names= get_name_song_spotify.extract_info(url_in_queue)
@@ -121,7 +125,6 @@ def run_bot():
                 # Если это прямая ссылка на одно видео
                 elif yt_info.get('url'):
                     player.urls.append(yt_info['url'])
-            #print(len(player.urls))
 
 
             elif "yandex.ru" in url_in_queue:
