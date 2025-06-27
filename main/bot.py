@@ -6,6 +6,7 @@ from discord import app_commands
 from dotenv import load_dotenv
 import get_name_song_spotify
 import get_name_song_yandex
+from text_to_speach import get_voice
 
 def run_bot():
     #загружает ключ
@@ -14,7 +15,7 @@ def run_bot():
 
 
     #выдает привилегии
-    intents = discord.Intents.default()
+    intents = discord.Intents.all()
     intents.voice_states = True
     intents.members = True
     client = discord.Client(intents=intents)
@@ -55,7 +56,7 @@ def run_bot():
     #выходит из канала если нету учасников
     @client.event
     async def on_voice_state_update(member, before, after):
-        # Проверяем голосовой канал бота в гильдии
+        # Проверяем голосовой канал бота 
         guild = member.guild
         voice_client = guild.voice_client
 
@@ -94,7 +95,7 @@ def run_bot():
             url_in_queue = player.queue.pop(0)
 
             #логирование запросов
-            with open("logs.txt", "a") as file:
+            with open("logs.txt", "a", encoding='utf-8') as file:
                 file.write(f"{url_in_queue}\n")
 
 
@@ -171,7 +172,7 @@ def run_bot():
             else:
                 await channel.connect()
         else:
-            await interaction.followup.send("Заходи, дорогой!")
+            await interaction.followup.send("Заходи на канал, дорогой!")
 
 
 
@@ -299,6 +300,24 @@ def run_bot():
             await interaction.followup.send('Возникла ошибка, товарищ!')
             print(e)
 
+
+    #команда /audio
+    @tree.command(name="audio", description="сдлеать из текста в войс")
+    async def audio(interaction: discord.Interaction, text: str):
+        try:
+            if not player.is_playing:
+                await join_for_play(interaction)
+                voice_client = interaction.guild.voice_client
+                await interaction.response.defer()
+                aud = await get_voice(text)
+                source =  discord.FFmpegPCMAudio(executable="ffmpeg/ffmpeg.exe", source=aud, pipe=True)
+                voice_client.play(source)
+                await interaction.followup.send("голос народа запущен!")
+            else:
+                await interaction.followup.send("не могу говорить пока играет музыка!")
+        except Exception as e:
+            await interaction.followup.send('Возникла ошибка, товарищ!')
+            print(e)
 
 
     #запускает бота

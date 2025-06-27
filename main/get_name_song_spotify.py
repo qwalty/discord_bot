@@ -32,7 +32,6 @@ def get_track_info(track_id):
     track = sp.track(track_id)
     artists = ", ".join([artist['name'] for artist in track['artists']])
     tracks= [f"{track['name']} - {artists}"]
-
     return tracks
 
 

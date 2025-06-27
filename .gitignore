@@ -1,0 +1,6 @@
+/main/ffmpeg
+/main/.env
+/main/.cache
+/main/logs.txt
+/.venv
+/.idea
