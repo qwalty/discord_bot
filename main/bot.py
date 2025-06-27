@@ -82,7 +82,7 @@ def run_bot():
             song_irl=player.urls.pop(0)
             #Воспроизведение трека
             voice_client = interaction.guild.voice_client
-            source = discord.FFmpegOpusAudio(executable="ffmpeg/ffmpeg.exe", **ffmpeg_options, source=song_irl)
+            source = discord.FFmpegOpusAudio( **ffmpeg_options, source=song_irl)
             voice_client.play(source,  after=lambda e: asyncio.run_coroutine_threadsafe(play_next(interaction), client.loop))
         else:
             player.is_playing = False
@@ -173,7 +173,6 @@ def run_bot():
                 await channel.connect()
         else:
             await interaction.followup.send("Заходи на канал, дорогой!")
-
 
 
 
@@ -310,7 +309,7 @@ def run_bot():
                 voice_client = interaction.guild.voice_client
                 await interaction.response.defer()
                 aud = await get_voice(text)
-                source =  discord.FFmpegPCMAudio(executable="ffmpeg/ffmpeg.exe", source=aud, pipe=True)
+                source =  discord.FFmpegPCMAudio(source=aud, pipe=True)
                 voice_client.play(source)
                 await interaction.followup.send("голос народа запущен!")
             else:
