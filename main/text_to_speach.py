@@ -17,7 +17,7 @@ async def get_voice(text):
     try:
         audio = elevenlabs.text_to_speech.convert(
             text=f"{text}",
-            voice_id="JBFqnCBsd6RMkjVDRZzb",
+            voice_id="nPczCjzI2devNBz1zQrb",
             model_id="eleven_multilingual_v2",
             output_format="mp3_44100_128",
         )
